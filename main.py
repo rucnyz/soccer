@@ -10,19 +10,19 @@ from sklearn import linear_model
 from sklearn import model_selection
 from sklearn.decomposition import PCA, FastICA
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import make_scorer
 from sklearn.metrics import precision_score, recall_score, balanced_accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MinMaxScaler
+from sklearnex import patch_sklearn
 
 from models.ml_train import find_best_classifier
-from utils.bet import optimize_betting
 from utils.get_data import get_fifa_data, create_feables
-from utils.visualize import explore_data, plot_confusion_matrix, plot_training_results, plot_bookkeeper_cf_matrix
+from utils.visualize import explore_data, plot_confusion_matrix, plot_training_results
 
 warnings.simplefilter("ignore")
 
@@ -55,6 +55,7 @@ def preprocess(data, norm = 1):
 
 
 if __name__ == '__main__':
+    patch_sklearn()
     start = time()
     args = parse_my_args()
     data_path = "./data/"  # 数据文件夹
@@ -126,8 +127,8 @@ if __name__ == '__main__':
     # 使用的评价指标以及网格搜索的参数
     feature_len = features.shape[1]
     scorer = make_scorer(args.metric_fn, average = args.average)
-    parameters_GB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 150, 200],
-                     "clf__max_depth": [1, 3, 5],
+    parameters_GB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 200],
+                     "clf__max_depth": [1, 3],
                      'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     parameters_RF = {'clf__max_features': ['auto', 'log2'], 'clf__max_depth': np.arange(1, 21, 4),
                      'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
