@@ -11,6 +11,7 @@ from sklearn import model_selection
 from sklearn.decomposition import PCA, FastICA
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import make_scorer
 from sklearn.metrics import precision_score, recall_score, balanced_accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
@@ -106,24 +107,28 @@ if __name__ == '__main__':
 
     # 初始化所有模型
     # 使用的分类器
+    GB_clf = GradientBoostingClassifier(random_state = args.seed)
     RF_clf = RandomForestClassifier(n_estimators = 200, random_state = args.seed, class_weight = 'balanced')
     AB_clf = AdaBoostClassifier(random_state = args.seed)
     GNB_clf = GaussianNB()
     KNN_clf = KNeighborsClassifier()
     LOG_clf = linear_model.LogisticRegression(multi_class = "ovr", solver = "sag", max_iter = 5000,
                                               class_weight = 'balanced')
-    clfs = [GNB_clf]
-    # clfs = [RF_clf, AB_clf, GNB_clf, KNN_clf, LOG_clf]
+    # clfs = [GNB_clf]
+    clfs = [GB_clf, RF_clf, AB_clf, GNB_clf, KNN_clf, LOG_clf]
 
     # 使用的降维方法
     pca = PCA()
     ica = FastICA()
-    dm_reductions = [pca]
-    # dm_reductions = [pca, ica]
+    # dm_reductions = [pca]
+    dm_reductions = [pca, ica]
 
     # 使用的评价指标以及网格搜索的参数
     feature_len = features.shape[1]
     scorer = make_scorer(args.metric_fn, average = args.average)
+    parameters_GB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 150, 200],
+                     "clf__max_depth": [1, 3, 5],
+                     'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     parameters_RF = {'clf__max_features': ['auto', 'log2'], 'clf__max_depth': np.arange(1, 21, 4),
                      'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     parameters_AB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 150, 200],
@@ -134,12 +139,13 @@ if __name__ == '__main__':
                       'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     parameters_LOG = {'clf__C': np.logspace(1, 1000, 5),
                       'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    parameters = {clfs[0]: parameters_GNB}
-    # parameters = {clfs[0]: parameters_RF,
-    #               clfs[1]: parameters_AB,
-    #               clfs[2]: parameters_GNB,
-    #               clfs[3]: parameters_KNN,
-    #               clfs[4]: parameters_LOG}
+    # parameters = {clfs[0]: parameters_GNB}
+    parameters = {clfs[0]: parameters_GB,
+                  clfs[1]: parameters_RF,
+                  clfs[2]: parameters_AB,
+                  clfs[3]: parameters_GNB,
+                  clfs[4]: parameters_KNN,
+                  clfs[5]: parameters_LOG}
 
     # 简单做一个baseline
     print("----------------------------------")
@@ -168,8 +174,7 @@ if __name__ == '__main__':
     # 找到最佳的分类器和降维方法然后画混淆矩阵
     best_clf = clfs[np.argmax(test_scores)]
     best_dm_reduce = dm_reductions[np.argmax(test_scores)]
-    print("最佳分类器为 [{}] 降维方法为 [{}].".format(best_clf.__class__.__name__,
-                                           best_dm_reduce.__class__.__name__))
+    print("最佳分类器为 [{}] 降维方法为 [{}].".format(best_clf.__class__.__name__, best_dm_reduce.__class__.__name__))
     plot_confusion_matrix(y_test, X_test, best_clf, best_dm_reduce, path = os.path.join(data_path, "pic/cf_visual.png"),
                           normalize = True)
 
