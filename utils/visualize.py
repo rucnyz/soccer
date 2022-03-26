@@ -15,29 +15,28 @@ from utils.get_data import get_bookkeeper_probs, get_match_label
 
 
 def explore_data(inputs, path):
-    """ Explore data by plotting KDE graphs. """
+    """ 画出每个特征的KDE图 """
 
-    # Define figure subplots
-    plt.figure(figsize = (22, 22), dpi = 200)
+    fig = plt.figure(figsize = (11,11), dpi = 200)
     # fig.subplots_adjust(bottom = -1, left = 0.025, top = 2, right = 0.975)
 
-    # Loop through features
+    # 对每个特征进行循环
     i = 1
     for col in inputs.columns:
-        if "League" in col:
+        if "League" in col or col == "label":
             continue
-        # Set subplot and plot format
         sns.set_style("whitegrid")
-        # sns.set_context("paper", font_scale = 0.5, rc = {"lines.linewidth": 1})
+        sns.set_context("paper", font_scale = 0.6, rc = {"lines.linewidth": 1})
         plt.subplot(6, 6, 0 + i)
 
-        # Plot KDE for all labels
+        # 画KDE图
         sns.kdeplot(inputs[inputs['label'] == 'Win'].loc[:, col], label = 'Win')
         sns.kdeplot(inputs[inputs['label'] == 'Draw'].loc[:, col], label = 'Draw')
         sns.kdeplot(inputs[inputs['label'] == 'Defeat'].loc[:, col], label = 'Defeat')
-        plt.legend()
         i = i + 1
-    plt.subplots_adjust()
+    lines, labels = fig.axes[-1].get_legend_handles_labels()
+    fig.legend(lines, labels, loc = 'lower right', fontsize = 14)
+    plt.tight_layout()
     # Define plot format
     # DefaultSize = fig.get_size_inches()
     # fig.set_size_inches((DefaultSize[0] * 1.2, DefaultSize[1] * 1.2))
@@ -68,23 +67,23 @@ def plot_confusion_matrix(y_test, X_test, clf, dim_reduce, path, cmap = plt.cm.B
         cm = cm.astype('float') / cm.sum()
 
     sns.set_style("whitegrid", {"axes.grid": False})
-    plt.figure(1)
+    plt.figure(dpi = 180)
     plt.imshow(cm, interpolation = 'nearest', cmap = cmap)
-    title = "Confusion matrix of a {} with {}".format(clf.__class__.__name__,
+    title = "Confusion matrix of a {} with {}".format(clf.base_estimator.__class__.__name__,
                                                       dim_reduce.__class__.__name__)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(labels))
-    plt.xticks(tick_marks, labels, rotation = 45)
+    plt.xticks(tick_marks, labels)
     plt.yticks(tick_marks, labels)
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, round(cm[i, j], 2),
-                 horizontalalignment = "center", color = "white" if cm[i, j] > thresh else "black")
-    plt.tight_layout()
+        plt.text(j, i, round(cm[i, j], 2), horizontalalignment = "center",
+                 color = "white" if cm[i, j] > thresh else "black")
+
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-
+    plt.tight_layout()
     plt.savefig(path)
 
     # Print classification report
@@ -94,11 +93,11 @@ def plot_confusion_matrix(y_test, X_test, clf, dim_reduce, path, cmap = plt.cm.B
 
 def plot_training_results(clfs, dm_reductions, train_scores, test_scores, path, metric_fn):
     """ 画出训练结果图 """
-    plt.figure(figsize = (8, 8), dpi = 160)
+    plt.figure(dpi = 160)
     sns.set_style("whitegrid")
-    # sns.set_context("paper", font_scale = 1, rc = {"lines.linewidth": 1})
+    sns.set_context("paper", font_scale = 0.8, rc = {"lines.linewidth": 1.2})
     ax = plt.subplot(111)
-    w = 0.5
+    w = 0
     x = np.arange(len(train_scores))
     ax.set_yticks(x + w)
     ax.legend((train_scores[0], test_scores[0]), ("Train Scores", "Test Scores"))
@@ -106,7 +105,7 @@ def plot_training_results(clfs, dm_reductions, train_scores, test_scores, path, 
 
     for i in range(0, len(clfs)):
         clf = clfs[i]
-        clf_name = clf.__class__.__name__
+        clf_name = clf.base_estimator.__class__.__name__
         dm = dm_reductions[i]
         dm_name = dm.__class__.__name__
 
@@ -115,10 +114,14 @@ def plot_training_results(clfs, dm_reductions, train_scores, test_scores, path, 
         names.append(name)
 
     ax.set_yticklabels(names)
-    plt.xlim(0.4, 0.6)
-    plt.barh(x, test_scores, color = 'b', alpha = 0.6)
+    plt.xlim(min(test_scores) - 0.01, max(test_scores) + 0.01)
+    plt.barh(x, test_scores, alpha = 0.6,
+             color = ["grey", "gold", "darkviolet", "turquoise", "r", "g", "b", "c", "m", "y",
+                      "k", "darkorange", "lightgreen", "plum", "tan",
+                      "khaki", "pink", "skyblue", "lawngreen", "salmon"])
     title = "Test Data {} Scores".format(metric_fn)
     plt.title(title)
+    plt.tight_layout()
     plt.savefig(path)
     print(title + "绘制完成")
     print("----------------------------------")

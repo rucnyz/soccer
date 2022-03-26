@@ -10,16 +10,14 @@ from sklearn import linear_model
 from sklearn import model_selection
 from sklearn.decomposition import PCA, FastICA
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import make_scorer
-from sklearn.metrics import precision_score, recall_score, balanced_accuracy_score, f1_score
+from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MinMaxScaler
 from sklearnex import patch_sklearn
-
 from models.ml_train import find_best_classifier
 from utils.get_data import get_fifa_data, create_feables
 from utils.visualize import explore_data, plot_confusion_matrix, plot_training_results
@@ -32,7 +30,7 @@ def parse_my_args():
     parser.add_argument('--seed', type = int, default = random.randint(0, 9999999))
     parser.add_argument('--visual', type = int, default = 0)
     parser.add_argument('--metric', type = str, default = "f1", choices = ["pre", "recall", "f1"])
-    parser.add_argument('--average', type = str, default = "macro", choices = ["macro", "micro", "weighted"])
+    parser.add_argument('--average', type = str, default = "weighted", choices = ["macro", "micro", "weighted"])
     arg = parser.parse_args()
     if arg.metric == "pre":
         arg.metric_fn = precision_score
@@ -44,18 +42,19 @@ def parse_my_args():
 
 
 def preprocess(data, norm = 1):
-    label, dic = data["label"].factorize()
+    label = data.loc[:, 'label'].values
     feat = data.drop('label', axis = 1).values
     if norm == 0:
-        return label, dic, feat
+        return label, feat
     else:
         scaler = MinMaxScaler([0, 1])
         norm_feat = scaler.fit_transform(feat)
-        return label, dic, norm_feat
+        return label, norm_feat
 
 
 if __name__ == '__main__':
     patch_sklearn()
+    # TODO 测试调整参数范围有没有用 n_components
     start = time()
     args = parse_my_args()
     data_path = "./data/"  # 数据文件夹
@@ -92,31 +91,33 @@ if __name__ == '__main__':
         feables = create_feables(match_data, fifa_data, bk_cols_selected, get_overall = True)
         inputs = feables.drop('match_api_id', axis = 1)
         inputs.to_pickle(feature_path)
-    labels, dictionary, features = preprocess(inputs, norm = 1)
+    labels, features = preprocess(inputs, norm = 1)
 
     # -----------------------可视化-----------------------
     if args.visual == 1:
         feature_details = explore_data(inputs, os.path.join(data_path, "pic/visual.png"))
 
     # -----------------------开始训练-----------------------
-    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size = 0.2,
-                                                        random_state = args.seed, stratify = labels)
-
+    X_train_calibrate, X_test, y_train_calibrate, y_test = train_test_split(features, labels, test_size = 0.2,
+                                                                            random_state = args.seed, stratify = labels)
+    X_train, X_calibrate, y_train, y_calibrate = train_test_split(X_train_calibrate, y_train_calibrate, test_size = 0.3,
+                                                                  random_state = args.seed,
+                                                                  stratify = y_train_calibrate)
     # 用训练数据做五折交叉验证
-    cv_sets = model_selection.StratifiedShuffleSplit(n_splits = 5, test_size = 0.20, random_state = args.seed)
+    cv_sets = model_selection.StratifiedShuffleSplit(n_splits = 5, test_size = 0.20, random_state = 5)
     cv_sets.get_n_splits(X_train, y_train)
 
     # 初始化所有模型
     # 使用的分类器
-    GB_clf = GradientBoostingClassifier(random_state = args.seed)
-    RF_clf = RandomForestClassifier(n_estimators = 200, random_state = args.seed, class_weight = 'balanced')
-    AB_clf = AdaBoostClassifier(random_state = args.seed)
+    # GB_clf = GradientBoostingClassifier(random_state = args.seed)
+    RF_clf = RandomForestClassifier(n_estimators = 200, random_state = 1, class_weight = 'balanced')
+    AB_clf = AdaBoostClassifier(n_estimators = 200, random_state = 2)
     GNB_clf = GaussianNB()
     KNN_clf = KNeighborsClassifier()
-    LOG_clf = linear_model.LogisticRegression(multi_class = "ovr", solver = "sag", max_iter = 5000,
-                                              class_weight = 'balanced')
+    LOG_clf = linear_model.LogisticRegression(multi_class = "ovr", solver = "sag", class_weight = 'balanced',
+                                              random_state = args.seed)
     # clfs = [GNB_clf]
-    clfs = [GB_clf, RF_clf, AB_clf, GNB_clf, KNN_clf, LOG_clf]
+    clfs = [RF_clf, AB_clf, GNB_clf, KNN_clf, LOG_clf]
 
     # 使用的降维方法
     pca = PCA()
@@ -126,27 +127,42 @@ if __name__ == '__main__':
 
     # 使用的评价指标以及网格搜索的参数
     feature_len = features.shape[1]
-    scorer = make_scorer(args.metric_fn, average = args.average)
-    parameters_GB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 200],
-                     "clf__max_depth": [1, 3],
-                     'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    parameters_RF = {'clf__max_features': ['auto', 'log2'], 'clf__max_depth': np.arange(1, 21, 4),
-                     'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    parameters_AB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 150, 200],
-                     'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    parameters_GNB = {
-        'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    parameters_KNN = {'clf__n_neighbors': [3, 5, 10],
-                      'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    parameters_LOG = {'clf__C': np.logspace(1, 1000, 5),
-                      'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    scorer = make_scorer(accuracy_score)
+    # scorer = make_scorer(args.metric_fn, average = args.average)
+    # parameters_GB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 200],
+    #                  "clf__max_depth": [1, 3],
+    #                  'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    # parameters_RF = {'clf__max_features': ['auto', 'log2'], 'clf__max_depth': np.arange(4, 33, 7),
+    #                  'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    # parameters_AB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 200],
+    #                  'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    # parameters_GNB = {
+    #     'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    # parameters_KNN = {'clf__n_neighbors': [3, 5, 10],
+    #                   'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    # parameters_LOG = {'clf__C': np.logspace(1, 1000, 5),
+    #                   'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     # parameters = {clfs[0]: parameters_GNB}
-    parameters = {clfs[0]: parameters_GB,
-                  clfs[1]: parameters_RF,
-                  clfs[2]: parameters_AB,
-                  clfs[3]: parameters_GNB,
-                  clfs[4]: parameters_KNN,
-                  clfs[5]: parameters_LOG}
+    parameters_RF = {'clf__max_features': ['auto', 'log2'],
+                     'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
+                                                          dtype = int)}
+    parameters_AB = {'clf__learning_rate': np.linspace(0.5, 2, 5),
+                     'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
+                                                          dtype = int)}
+    parameters_GNB = {
+        'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1, dtype = int)}
+    parameters_KNN = {'clf__n_neighbors': [3, 5, 10],
+                      'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
+                                                           dtype = int)}
+    parameters_LOG = {'clf__C': np.logspace(1, 1000, 5),
+                      'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
+                                                           dtype = int)}
+    parameters = {
+        clfs[0]: parameters_RF,
+        clfs[1]: parameters_AB,
+        clfs[2]: parameters_GNB,
+        clfs[3]: parameters_KNN,
+        clfs[4]: parameters_LOG}
 
     # 简单做一个baseline
     print("----------------------------------")
@@ -157,16 +173,16 @@ if __name__ == '__main__':
     test_pred = clf.predict(X_test)
     print("[{}] training set "
           "[balanced accuracy]: {:.4f}  "
-          "[{} score]: {:.4f}".format(clf.__class__.__name__, balanced_accuracy_score(y_train, train_pred), args.metric,
+          "[{} score]: {:.4f}".format(clf.__class__.__name__, accuracy_score(y_train, train_pred), args.metric,
                                       args.metric_fn(y_train, train_pred, average = args.average)))
     print("[{}] test set     "
           "[balanced accuracy]: {:.4f}  "
-          "[{} score]: {:.4f}".format(clf.__class__.__name__, balanced_accuracy_score(y_test, test_pred), args.metric,
+          "[{} score]: {:.4f}".format(clf.__class__.__name__, accuracy_score(y_test, test_pred), args.metric,
                                       args.metric_fn(y_test, test_pred, average = args.average)))
     # 训练所有的方法
     clfs, dm_reductions, train_scores, test_scores = find_best_classifier(clfs, dm_reductions, scorer, X_train, y_train,
-                                                                          X_test, y_test, cv_sets, parameters, n_jobs,
-                                                                          args)
+                                                                          X_calibrate, y_calibrate, X_test, y_test,
+                                                                          cv_sets, parameters, n_jobs, args)
     # 可视化训练集和测试集结果
     plot_training_results(clfs, dm_reductions, np.array(train_scores), np.array(test_scores),
                           path = os.path.join(data_path, "pic/train_visual.png"), metric_fn = args.metric)
@@ -175,7 +191,8 @@ if __name__ == '__main__':
     # 找到最佳的分类器和降维方法然后画混淆矩阵
     best_clf = clfs[np.argmax(test_scores)]
     best_dm_reduce = dm_reductions[np.argmax(test_scores)]
-    print("最佳分类器为 [{}] 降维方法为 [{}].".format(best_clf.__class__.__name__, best_dm_reduce.__class__.__name__))
+    print("最佳分类器为 [{}] 降维方法为 [{}].".format(best_clf.base_estimator.__class__.__name__,
+                                           best_dm_reduce.__class__.__name__))
     plot_confusion_matrix(y_test, X_test, best_clf, best_dm_reduce, path = os.path.join(data_path, "pic/cf_visual.png"),
                           normalize = True)
 
