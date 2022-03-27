@@ -122,8 +122,8 @@ if __name__ == '__main__':
     # 使用的降维方法
     pca = PCA()
     ica = FastICA()
-    # dm_reductions = [pca]
-    dm_reductions = [pca, ica]
+    # reductions = [pca]
+    reductions = [pca, ica]
 
     # 使用的评价指标以及网格搜索的参数
     feature_len = features.shape[1]
@@ -131,32 +131,32 @@ if __name__ == '__main__':
     # scorer = make_scorer(args.metric_fn, average = args.average)
     # parameters_GB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 200],
     #                  "clf__max_depth": [1, 3],
-    #                  'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    #                  'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     # parameters_RF = {'clf__max_features': ['auto', 'log2'], 'clf__max_depth': np.arange(4, 33, 7),
-    #                  'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    #                  'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     # parameters_AB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 200],
-    #                  'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    #                  'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     # parameters_GNB = {
-    #     'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    #     'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     # parameters_KNN = {'clf__n_neighbors': [3, 5, 10],
-    #                   'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    #                   'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     # parameters_LOG = {'clf__C': np.logspace(1, 1000, 5),
-    #                   'dm_reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
+    #                   'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
     # parameters = {clfs[0]: parameters_GNB}
     parameters_RF = {'clf__max_features': ['auto', 'log2'],
-                     'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
-                                                          dtype = int)}
+                     'reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
+                                                       dtype = int)}
     parameters_AB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 200],
-                     'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
-                                                          dtype = int)}
+                     'reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
+                                                       dtype = int)}
     parameters_GNB = {
-        'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1, dtype = int)}
+        'reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1, dtype = int)}
     parameters_KNN = {'clf__n_neighbors': [3, 5, 10],
-                      'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
-                                                           dtype = int)}
+                      'reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
+                                                        dtype = int)}
     parameters_LOG = {'clf__C': np.logspace(1, 1000, 5),
-                      'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
-                                                           dtype = int)}
+                      'reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
+                                                        dtype = int)}
     parameters = {
         clfs[0]: parameters_RF,
         clfs[1]: parameters_AB,
@@ -180,20 +180,20 @@ if __name__ == '__main__':
           "[{} score]: {:.4f}".format(clf.__class__.__name__, accuracy_score(y_test, test_pred), args.metric,
                                       args.metric_fn(y_test, test_pred, average = args.average)))
     # 训练所有的方法
-    clfs, dm_reductions, train_scores, test_scores = find_best_classifier(clfs, dm_reductions, scorer, X_train, y_train,
-                                                                          X_calibrate, y_calibrate, X_test, y_test,
-                                                                          cv_sets, parameters, n_jobs, args)
+    clfs, reductions, train_scores, test_scores = find_best_classifier(clfs, reductions, scorer, X_train, y_train,
+                                                                       X_calibrate, y_calibrate, X_test, y_test,
+                                                                       cv_sets, parameters, n_jobs, args)
     # 可视化训练集和测试集结果
-    plot_training_results(clfs, dm_reductions, np.array(train_scores), np.array(test_scores),
+    plot_training_results(clfs, reductions, np.array(train_scores), np.array(test_scores),
                           path = os.path.join(data_path, "pic/train_visual.png"), metric_fn = args.metric)
 
     # -----------------------画混淆矩阵和赌博的预测-----------------------
     # 找到最佳的分类器和降维方法然后画混淆矩阵
     best_clf = clfs[np.argmax(test_scores)]
-    best_dm_reduce = dm_reductions[np.argmax(test_scores)]
+    best_reduce = reductions[np.argmax(test_scores)]
     print("最佳分类器为 [{}] 降维方法为 [{}].".format(best_clf.base_estimator.__class__.__name__,
-                                           best_dm_reduce.__class__.__name__))
-    plot_confusion_matrix(y_test, X_test, best_clf, best_dm_reduce, path = os.path.join(data_path, "pic/cf_visual.png"),
+                                           best_reduce.__class__.__name__))
+    plot_confusion_matrix(y_test, X_test, best_clf, best_reduce, path = os.path.join(data_path, "pic/cf_visual.png"),
                           normalize = True)
 
     # # 画赌博预测的混淆矩阵
@@ -202,7 +202,7 @@ if __name__ == '__main__':
     # # 用网格搜索找到最佳赌博策略
     # percentile_grid = np.linspace(0, 1, 2)
     # probability_grid = np.linspace(0, 0.5, 2)
-    # best_betting = optimize_betting(best_clf, best_dm_reduce, bk_cols_selected, bk_cols, match_data, fifa_data,
+    # best_betting = optimize_betting(best_clf, best_reduce, bk_cols_selected, bk_cols, match_data, fifa_data,
     #                                 5, 300, percentile_grid, probability_grid)
     # print("The best return of investment is: {}".format(best_betting.results))
 

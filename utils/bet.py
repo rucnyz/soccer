@@ -146,7 +146,7 @@ def find_good_bets(clf, dim_reduce, bk, bookkeepers, matches, fifa_data, percent
     return choices
 
 
-def optimize_betting(best_clf, best_dm_reduce, bk_cols_selected, bk_cols, match_data, fifa_data,
+def optimize_betting(best_clf, best_reduce, bk_cols_selected, bk_cols, match_data, fifa_data,
                      n_samples, sample_size, parameter_1_grid, parameter_2_grid):
     """ Tune parameters of bet selection algorithm. """
 
@@ -167,7 +167,7 @@ def optimize_betting(best_clf, best_dm_reduce, bk_cols_selected, bk_cols, match_
             # Compute average score over all samples
             profits = []
             for sample in samples:
-                choices = find_good_bets(best_clf, best_dm_reduce, bk_cols_selected, bk_cols, sample, fifa_data, i, j)
+                choices = find_good_bets(best_clf, best_reduce, bk_cols_selected, bk_cols, sample, fifa_data, i, j)
                 profit = execute_bets(choices, match_data)
                 profits.append(profit)
             result = np.mean(np.array(profits))

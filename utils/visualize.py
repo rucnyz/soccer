@@ -17,7 +17,7 @@ from utils.get_data import get_bookkeeper_probs, get_match_label
 def explore_data(inputs, path):
     """ 画出每个特征的KDE图 """
 
-    fig = plt.figure(figsize = (11,11), dpi = 200)
+    fig = plt.figure(figsize = (11, 11), dpi = 200)
     # fig.subplots_adjust(bottom = -1, left = 0.025, top = 2, right = 0.975)
 
     # 对每个特征进行循环
@@ -91,7 +91,7 @@ def plot_confusion_matrix(y_test, X_test, clf, dim_reduce, path, cmap = plt.cm.B
     print(classification_report(y_test, y_pred))
 
 
-def plot_training_results(clfs, dm_reductions, train_scores, test_scores, path, metric_fn):
+def plot_training_results(clfs, reductions, train_scores, test_scores, path, metric_fn):
     """ 画出训练结果图 """
     plt.figure(dpi = 160)
     sns.set_style("whitegrid")
@@ -106,11 +106,11 @@ def plot_training_results(clfs, dm_reductions, train_scores, test_scores, path, 
     for i in range(0, len(clfs)):
         clf = clfs[i]
         clf_name = clf.base_estimator.__class__.__name__
-        dm = dm_reductions[i]
-        dm_name = dm.__class__.__name__
+        red = reductions[i]
+        red_name = red.__class__.__name__
 
         # 储存名字
-        name = "{} with {}".format(clf_name, dm_name)
+        name = "{} with {}".format(clf_name, red_name)
         names.append(name)
 
     ax.set_yticklabels(names)
