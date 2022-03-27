@@ -110,8 +110,8 @@ if __name__ == '__main__':
     # 初始化所有模型
     # 使用的分类器
     # GB_clf = GradientBoostingClassifier(random_state = args.seed)
-    RF_clf = RandomForestClassifier(n_estimators = 200, random_state = 1, class_weight = 'balanced')
-    AB_clf = AdaBoostClassifier(n_estimators = 200, random_state = 2)
+    RF_clf = RandomForestClassifier(n_estimators = 200, random_state = 2, class_weight = 'balanced')
+    AB_clf = AdaBoostClassifier(random_state = 3)
     GNB_clf = GaussianNB()
     KNN_clf = KNeighborsClassifier()
     LOG_clf = linear_model.LogisticRegression(multi_class = "ovr", solver = "sag", class_weight = 'balanced',
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     parameters_RF = {'clf__max_features': ['auto', 'log2'],
                      'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
                                                           dtype = int)}
-    parameters_AB = {'clf__learning_rate': np.linspace(0.5, 2, 5),
+    parameters_AB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 200],
                      'dm_reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
                                                           dtype = int)}
     parameters_GNB = {
