@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# @Time    : 2022/3/21 17:41
+# @Author  : nieyuzhou
+# @File    : extract_sql.py
+# @Software: PyCharm
 import sqlite3
 import pandas as pd
 

@@ -13,6 +13,28 @@ from sklearn.metrics import classification_report, confusion_matrix, balanced_ac
 
 from utils.get_data import get_bookkeeper_probs, get_match_label
 
+colors = ["r", "g", "grey", "gold", "darkviolet", "turquoise", "b", "c", "m", "y", "k", "darkorange", "lightgreen",
+          "plum", "tan", "khaki", "pink", "skyblue", "lawngreen", "salmon"]
+
+
+def plot_radar(data, kinds, path):
+    labels = data.columns.values
+    result = pd.concat([data, data[[labels[0]]]], axis = 1)
+    centers = np.array(result.loc[:, :])
+    n = len(labels)
+    angle = np.linspace(0, 2 * np.pi, n, endpoint = False)
+    angle2 = np.concatenate((angle, [angle[0]]))
+    plt.figure(dpi = 160)
+    for i in range(len(kinds)):
+        plt.subplot(111, polar = True)
+        plt.plot(angle2, centers[i], color = colors[i], linewidth = 1, label = kinds[i])
+        plt.fill(angle2, centers[i], color = colors[i], alpha = 0.1)
+    plt.thetagrids(angle * 180 / np.pi, labels)
+    plt.legend(loc = (-0.2, 0), fontsize = 10)
+    plt.title('famous and average radar')
+    plt.tight_layout()
+    plt.savefig(path)
+
 
 def explore_data(inputs, path):
     """ 画出每个特征的KDE图 """
@@ -116,9 +138,7 @@ def plot_training_results(clfs, reductions, train_scores, test_scores, path, met
     ax.set_yticklabels(names)
     plt.xlim(min(test_scores) - 0.01, max(test_scores) + 0.01)
     plt.barh(x, test_scores, alpha = 0.6,
-             color = ["grey", "gold", "darkviolet", "turquoise", "r", "g", "b", "c", "m", "y",
-                      "k", "darkorange", "lightgreen", "plum", "tan",
-                      "khaki", "pink", "skyblue", "lawngreen", "salmon"])
+             color = colors)
     title = "Test Data {} Scores".format(metric_fn)
     plt.title(title)
     plt.tight_layout()

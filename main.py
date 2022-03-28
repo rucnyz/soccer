@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# @Time    : 2022/3/20 21:56
+# @Author  : nieyuzhou
+# @File    : main.py
+# @Software: PyCharm
 import argparse
 import os.path
 import random

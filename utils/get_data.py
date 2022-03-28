@@ -104,9 +104,8 @@ def get_wins(matches, team):
 
 # Loading all functions
 def get_match_label(match):
-    """ Derives a label for a given match. """
+    """ 对一个给定比赛生成标签 """
 
-    # Define variables
     home_goals = match['home_team_goal']
     away_goals = match['away_team_goal']
 
@@ -138,21 +137,18 @@ def get_fifa_stats(match, player_stats):
     names = []
 
     for player in players:
-
         # 得到球员ID
         player_id = match[player]
         # 获得该球员信息
         stats = player_stats[player_stats.player_api_id == player_id]
         # 获得距离该比赛最近的该球员状态
         current_stats = stats[stats.date < date].sort_values(by = 'date', ascending = False)[:1]
-
         if np.isnan(player_id):
             overall_rating = pd.Series(0)
         else:
             current_stats.reset_index(inplace = True, drop = True)
             # 得到评分
             overall_rating = pd.Series(current_stats.loc[0, "overall_rating"])
-
         # 重命名
         name = "{}_overall_rating".format(player)
         names.append(name)
@@ -239,7 +235,6 @@ def get_bookkeeper_data(matches, bookkeepers, horizontal = True):
         temp_data.loc[:, 'Draw'] = pd.to_numeric(temp_data['Draw'])
         temp_data.loc[:, 'Defeat'] = pd.to_numeric(temp_data['Defeat'])
 
-        # Check if data should be aggregated horizontally
         if horizontal:
             # 赔率转化为概率
             temp_data = convert_odds_to_prob(temp_data)
@@ -264,16 +259,15 @@ def get_bookkeeper_data(matches, bookkeepers, horizontal = True):
 
 
 def convert_odds_to_prob(match_odds):
-    """ Converts bookkeeper odds to probabilities. """
+    """ 赔率转为概率 """
 
-    # Define variables
     match_id = match_odds.loc[:, 'match_api_id']
     bookkeeper = match_odds.loc[:, 'bookkeeper']
     win_odd = match_odds.loc[:, 'Win']
     draw_odd = match_odds.loc[:, 'Draw']
     loss_odd = match_odds.loc[:, 'Defeat']
 
-    # Converts odds to prob
+    # 归一化
     win_prob = 1 / win_odd
     draw_prob = 1 / draw_odd
     loss_prob = 1 / loss_odd
