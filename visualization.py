@@ -10,7 +10,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 from utils.get_data import get_age_for_football_players, get_pos_stats
-from utils.visualize import plot_radar, plot_bar, plot_age_dependence
+from utils.visualize import plot_radar, plot_bar, plot_age_dependence, plot_beautiful_scatter_weight_and_height
 
 
 def plot_famous_radar(data, data_six):
@@ -117,4 +117,5 @@ if __name__ == '__main__':
     # plot_famous_radar(player, famous_six_data)
     # plot_bar(["Forward", "Midfielder", "Goalkeeper", "Defender"], [431, 311, 147, 2],
     #          os.path.join(data_path, "pic/bar.png"))
-    plot_age_dependence(pos_data, os.path.join(data_path, "pic/age.png"))
+    # plot_age_dependence(pos_data, os.path.join(data_path, "pic/age.png"))
+    plot_beautiful_scatter_weight_and_height(pos_data, os.path.join(data_path, "pic/weight.png"))

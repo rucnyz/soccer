@@ -240,3 +240,33 @@ def plot_age_dependence(player_data, path):
     plt.legend(['Forward', "Defender", "Goalkeeper", "Midfielder"], loc = 'best')
     plt.title("Age and Rating")
     plt.savefig(path)
+
+
+def plot_beautiful_scatter_weight_and_height(player_data, path):
+    lbs_to_kg = 0.453592
+    fig = plt.figure(dpi = 160, facecolor = 'w', edgecolor = 'k')
+    def_data = player_data[player_data["pos"] == "def"]
+    forw_data = player_data[player_data["pos"] == "for"]
+    gk_data = player_data[player_data["pos"] == "gk"]
+    midf_data = player_data[player_data["pos"] == "mid"]
+    def_heigh = (def_data["height"] + np.random.normal(loc = 0.0, scale = 3.0, size = len(def_data)))
+    forw_heigh = forw_data["height"] + np.random.normal(loc = 0.0, scale = 3.0, size = len(forw_data))
+    gk_heigh = gk_data["height"] + np.random.normal(loc = 0.0, scale = 3.0, size = len(gk_data))
+    midf_heigh = midf_data["height"] + np.random.normal(loc = 0.0, scale = 3.0, size = len(midf_data))
+    def_weight = (def_data["weight"] + np.random.normal(loc = 0.0, scale = 3.0, size = len(def_data))) * lbs_to_kg
+    forw_weight = (forw_data["weight"] + np.random.normal(loc = 0.0, scale = 3.0, size = len(forw_data))) * lbs_to_kg
+    gk_weight = (gk_data["weight"] + np.random.normal(loc = 0.0, scale = 3.0, size = len(gk_data))) * lbs_to_kg
+    midf_weight = (midf_data["weight"] + np.random.normal(loc = 0.0, scale = 3.0, size = len(midf_data))) * lbs_to_kg
+    subplot = fig.add_subplot(111)
+    subplot.tick_params(axis = 'both', which = 'major')
+    midf = subplot.scatter(midf_weight, midf_heigh, marker = 'o', color = colors[0], alpha = 0.6, s = 5)
+    defend = subplot.scatter(def_weight, def_heigh, marker = 'v', color = colors[1], alpha = 0.6, s = 5)
+    forw = subplot.scatter(forw_weight, forw_heigh, marker = '*', color = colors[2], alpha = 0.6, s = 5)
+    gk = subplot.scatter(gk_weight, gk_heigh, marker = '^', color = colors[3], alpha = 0.6, s = 5)
+    plt.xlabel('Weight (kilograms)')
+    plt.ylabel('Height (centimeters)')
+    plt.legend((defend, forw, gk, midf), ('Defender', 'Forward', 'Goalkeeper', 'Midfielder'), scatterpoints = 1,
+               loc = 'upper left', ncol = 1, fontsize = 10)
+    plt.title("Height and Weight")
+    plt.tight_layout()
+    plt.savefig(path)
