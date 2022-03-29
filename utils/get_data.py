@@ -4,9 +4,9 @@
 # @File    : get_data.py
 # @Software: PyCharm
 import os
+from datetime import datetime
 from time import time
 
-import numpy as np
 import pandas as pd
 
 
@@ -141,14 +141,12 @@ def get_fifa_stats(match, player_stats):
         player_id = match[player]
         # 获得该球员信息
         stats = player_stats[player_stats.player_api_id == player_id]
+
         # 获得距离该比赛最近的该球员状态
         current_stats = stats[stats.date < date].sort_values(by = 'date', ascending = False)[:1]
-        if np.isnan(player_id):
-            overall_rating = pd.Series(0)
-        else:
-            current_stats.reset_index(inplace = True, drop = True)
-            # 得到评分
-            overall_rating = pd.Series(current_stats.loc[0, "overall_rating"])
+        current_stats.reset_index(inplace = True, drop = True)
+        # 得到评分
+        overall_rating = pd.Series(current_stats.loc[0, "overall_rating"])
         # 重命名
         name = "{}_overall_rating".format(player)
         names.append(name)
@@ -160,6 +158,20 @@ def get_fifa_stats(match, player_stats):
     player_stats_new.reset_index(inplace = True, drop = True)
 
     return player_stats_new.iloc[0]
+
+
+def get_pos_stats(x, player_stats):
+    stats = player_stats[player_stats.player_api_id == x["player_api_id"]]
+    cur_stats = stats[stats.date < x["date"]].sort_values(by = 'date', ascending = False).iloc[:1, :]
+    cur_stats['pos'] = x['pos']
+    return cur_stats.iloc[0, :]
+
+
+def get_age_for_football_players(x):
+    date = x.split(" ")[0]
+    today = datetime.strptime("2016-01-01", "%Y-%m-%d").date()
+    born = datetime.strptime(date, "%Y-%m-%d").date()
+    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
 
 def get_fifa_data(matches, player_stats, path = None):

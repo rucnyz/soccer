@@ -14,16 +14,15 @@ import pandas as pd
 from sklearn import linear_model
 from sklearn import model_selection
 from sklearn.decomposition import PCA, FastICA
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.metrics import make_scorer
 from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MinMaxScaler
-from sklearnex import patch_sklearn
-from models.ml_train import find_best_classifier
+from models.ml_train import find_best_classifier, train_ensemble
 from utils.get_data import get_fifa_data, create_feables
 from utils.visualize import explore_data, plot_confusion_matrix, plot_training_results
 
@@ -58,7 +57,6 @@ def preprocess(data, norm = 1):
 
 
 if __name__ == '__main__':
-    patch_sklearn()
     # TODO 测试调整参数范围有没有用 n_components
     start = time()
     args = parse_my_args()
@@ -116,11 +114,13 @@ if __name__ == '__main__':
     # 使用的分类器
     # GB_clf = GradientBoostingClassifier(random_state = args.seed)
     RF_clf = RandomForestClassifier(n_estimators = 200, random_state = 2, class_weight = 'balanced')
+    XT_clf = ExtraTreesClassifier(random_state = 1)
     AB_clf = AdaBoostClassifier(random_state = 3)
     GNB_clf = GaussianNB()
     KNN_clf = KNeighborsClassifier()
     LOG_clf = linear_model.LogisticRegression(multi_class = "ovr", solver = "sag", class_weight = 'balanced',
                                               random_state = args.seed)
+
     # clfs = [GNB_clf]
     clfs = [RF_clf, AB_clf, GNB_clf, KNN_clf, LOG_clf]
 
@@ -134,20 +134,6 @@ if __name__ == '__main__':
     feature_len = features.shape[1]
     scorer = make_scorer(accuracy_score)
     # scorer = make_scorer(args.metric_fn, average = args.average)
-    # parameters_GB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 200],
-    #                  "clf__max_depth": [1, 3],
-    #                  'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    # parameters_RF = {'clf__max_features': ['auto', 'log2'], 'clf__max_depth': np.arange(4, 33, 7),
-    #                  'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    # parameters_AB = {'clf__learning_rate': np.linspace(0.5, 2, 5), 'clf__n_estimators': [50, 100, 200],
-    #                  'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    # parameters_GNB = {
-    #     'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    # parameters_KNN = {'clf__n_neighbors': [3, 5, 10],
-    #                   'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    # parameters_LOG = {'clf__C': np.logspace(1, 1000, 5),
-    #                   'reduce__n_components': np.arange(5, feature_len + 1, int(feature_len / 5) - 1)}
-    # parameters = {clfs[0]: parameters_GNB}
     parameters_RF = {'clf__max_features': ['auto', 'log2'],
                      'reduce__n_components': np.arange(5, feature_len + 1, np.around(feature_len / 5) - 1,
                                                        dtype = int)}
@@ -167,7 +153,8 @@ if __name__ == '__main__':
         clfs[1]: parameters_AB,
         clfs[2]: parameters_GNB,
         clfs[3]: parameters_KNN,
-        clfs[4]: parameters_LOG}
+        clfs[4]: parameters_LOG,
+    }
 
     # 简单做一个baseline
     print("----------------------------------")
@@ -188,6 +175,9 @@ if __name__ == '__main__':
     clfs, reductions, train_scores, test_scores = find_best_classifier(clfs, reductions, scorer, X_train, y_train,
                                                                        X_calibrate, y_calibrate, X_test, y_test,
                                                                        cv_sets, parameters, n_jobs, args)
+    train_score, test_score = train_ensemble(clfs, reductions, X_train_calibrate, y_train_calibrate, X_test, y_test)
+    train_scores.append(train_score)
+    test_scores.append(test_score)
     # 可视化训练集和测试集结果
     plot_training_results(clfs, reductions, np.array(train_scores), np.array(test_scores),
                           path = os.path.join(data_path, "pic/train_visual.png"), metric_fn = args.metric)

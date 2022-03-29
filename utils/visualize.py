@@ -4,7 +4,7 @@
 # @File    : visualize.py
 # @Software: PyCharm
 import itertools
-
+from scipy.interpolate import interp1d
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -17,7 +17,16 @@ colors = ["r", "g", "grey", "gold", "darkviolet", "turquoise", "b", "c", "m", "y
           "plum", "tan", "khaki", "pink", "skyblue", "lawngreen", "salmon"]
 
 
-def plot_radar(data, kinds, path):
+def plot_bar(x, y, path):
+    plt.figure(dpi = 140)
+    plt.bar(x, y, color = colors, alpha = 0.6)
+    for i, b in enumerate(y):
+        plt.text(i, b + 7, b, ha = 'center', va = 'center')
+    plt.title("bar")
+    plt.savefig(path)
+
+
+def plot_radar(data, kinds, path, title):
     labels = data.columns.values
     result = pd.concat([data, data[[labels[0]]]], axis = 1)
     centers = np.array(result.loc[:, :])
@@ -31,7 +40,7 @@ def plot_radar(data, kinds, path):
         plt.fill(angle2, centers[i], color = colors[i], alpha = 0.1)
     plt.thetagrids(angle * 180 / np.pi, labels)
     plt.legend(loc = (-0.2, 0), fontsize = 10)
-    plt.title('famous and average radar')
+    plt.title(title)
     plt.tight_layout()
     plt.savefig(path)
 
@@ -65,15 +74,12 @@ def explore_data(inputs, path):
 
     plt.savefig(path)
 
-    # Compute and print label weights
     labels = inputs.loc[:, 'label']
     class_weights = labels.value_counts() / len(labels)
     print(class_weights)
 
-    # Store description of all features
     feature_details = inputs.describe().transpose()
 
-    # Return feature details
     return feature_details
 
 
@@ -91,8 +97,8 @@ def plot_confusion_matrix(y_test, X_test, clf, dim_reduce, path, cmap = plt.cm.B
     sns.set_style("whitegrid", {"axes.grid": False})
     plt.figure(dpi = 180)
     plt.imshow(cm, interpolation = 'nearest', cmap = cmap)
-    title = "Confusion matrix of a {} with {}".format(clf.base_estimator.__class__.__name__,
-                                                      dim_reduce.__class__.__name__)
+    title = "Confusion matrix of a stacking method"
+    # .format(clf.base_estimator.__class__.__name__,dim_reduce.__class__.__name__)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(labels))
@@ -130,11 +136,10 @@ def plot_training_results(clfs, reductions, train_scores, test_scores, path, met
         clf_name = clf.base_estimator.__class__.__name__
         red = reductions[i]
         red_name = red.__class__.__name__
-
         # 储存名字
         name = "{} with {}".format(clf_name, red_name)
         names.append(name)
-
+    names.append("Stacking")
     ax.set_yticklabels(names)
     plt.xlim(min(test_scores) - 0.01, max(test_scores) + 0.01)
     plt.barh(x, test_scores, alpha = 0.6,
@@ -197,3 +202,41 @@ def plot_bookkeeper_cf_matrix(matches, bookkeepers, path, normalize = True):
     # 输出报告
     print(classification_report(y_test, y_pred))
     print("菠菜的分数 test set: {:.4f}.".format(balanced_accuracy_score(y_test, y_pred)))
+
+
+def plot_age_dependence(player_data, path):
+    def_data = player_data[player_data["pos"] == "def"]
+    forw_data = player_data[player_data["pos"] == "for"]
+    gk_data = player_data[player_data["pos"] == "gk"]
+    midf_data = player_data[player_data["pos"] == "mid"]
+
+    fig = plt.figure(dpi = 140, facecolor = 'w', edgecolor = 'k')
+    group = forw_data.groupby("age")["overall_rating"].mean().reset_index()
+    age_forw = group["age"]
+    rating_forw = group["overall_rating"]
+
+    ff = interp1d(age_forw, rating_forw, kind = 'cubic')
+    group = def_data.groupby("age")["overall_rating"].mean().reset_index()
+    age_def = group["age"]
+    rating_def = group["overall_rating"]
+    fd = interp1d(age_def, rating_def, kind = 'cubic')
+
+    group = gk_data.groupby("age")["overall_rating"].mean().reset_index()
+    age_gk = group["age"]
+    rating_gk = group["overall_rating"]
+    fg = interp1d(age_gk, rating_gk, kind = 'cubic')
+
+    group = midf_data.groupby("age")["overall_rating"].mean().reset_index()
+    age_midf = group["age"]
+    rating_midf = group["overall_rating"]
+    fm = interp1d(age_midf, rating_midf, kind = 'cubic')
+
+    agenew = np.linspace(17, 40, num = 100, endpoint = True)
+    subplot = fig.add_subplot(111)
+    subplot.tick_params(axis = 'both', which = 'major')
+    plt.xlabel('Age')
+    plt.ylabel('Overall Rating')
+    plt.plot(agenew, ff(agenew), "-", agenew, fd(agenew), "-", agenew, fg(agenew), "-", agenew, fm(agenew), "-")
+    plt.legend(['Forward', "Defender", "Goalkeeper", "Midfielder"], loc = 'best')
+    plt.title("Age and Rating")
+    plt.savefig(path)

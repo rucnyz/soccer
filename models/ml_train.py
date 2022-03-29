@@ -5,10 +5,41 @@
 # @Software: PyCharm
 from time import time
 
+import numpy as np
+import pandas as pd
 from sklearn import model_selection
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.metrics import f1_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import f1_score, accuracy_score
 from sklearn.pipeline import Pipeline
+
+
+def train_ensemble(clfs, reductions, X_train, y_train, X_test, y_test):
+    train_proba = np.zeros((len(X_train), len(clfs)))
+    train_proba = pd.DataFrame(train_proba)
+    train_proba.columns = ['pca_rf', 'pca_ada', 'pca_gnb', 'pca_knn', 'pca_log', 'ica_rf', 'ica_ada', 'ica_gnb',
+                           'ica_knn', 'ica_log']
+
+    test_proba = np.zeros((len(X_test), len(clfs)))
+    test_proba = pd.DataFrame(test_proba)
+    test_proba.columns = ['pca_rf', 'pca_ada', 'pca_gnb', 'pca_knn', 'pca_log', 'ica_rf', 'ica_ada', 'ica_gnb',
+                          'ica_knn', 'ica_log']
+    for i in range(len(clfs)):
+        train_proba.iloc[:, i] = clfs[i].predict_proba(reductions[i].transform(X_train))
+        test_proba.iloc[:, i] = clfs[i].predict_proba(reductions[i].transform(X_test))
+    lr = LogisticRegression(random_state = 24)
+    cv_sets = model_selection.StratifiedShuffleSplit(n_splits = 5, test_size = 0.20, random_state = 2)
+    cv_sets.get_n_splits(X_train, y_train)
+    params = {'C': np.logspace(0.1, 1000, 10)}
+    grid_obj = model_selection.GridSearchCV(lr, param_grid = params, scoring = 'accuracy', cv = cv_sets)
+    grid_obj.fit(X_train, y_train)
+    train_pred = grid_obj.predict(X_train)
+    test_pred = grid_obj.predict(X_test)
+    train_score = accuracy_score(y_train, train_pred)
+    test_score = accuracy_score(y_test, test_pred)
+    print("stacking方法，训练集准确率 {:.4f}".format(train_score))
+    print("stacking方法，测试集准确率 {:.4f}".format(test_score))
+    return train_score, test_score, test_pred
 
 
 def predict_labels(clf, best_reduce, features, target, pred_func, average):
