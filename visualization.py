@@ -104,18 +104,22 @@ if __name__ == '__main__':
     # pos_data太多了先保存
     if os.path.exists(os.path.join(data_path, "player_pos.csv")):
         pos_data = pd.read_csv(os.path.join(data_path, "player_pos.csv"), index_col = 0)
+        print("读取player_pos.csv文件")
     else:
+        print("生成player_pos.csv文件")
         pos_data = get_position(match_data, player)
         pos_data["age"] = pos_data["birthday"].apply(get_age_for_football_players)
+        pos_data.to_csv(os.path.join(data_path, "player_pos.csv"))
+        print("生成完成")
     # 按照球场位置
     pos_data.dropna(inplace = True)
     pos_six_data = get_six(pos_data, ["pos"])
     # 明星球员
     famous_six_data = get_six(player, ["player_api_id", "player_name"])
-    # 画图函数，用哪个取消注释即可
-    # plot_pos_radar(pos_six_data)
-    # plot_famous_radar(player, famous_six_data)
-    # plot_bar(["Forward", "Midfielder", "Goalkeeper", "Defender"], [431, 311, 147, 2],
-    #          os.path.join(data_path, "pic/bar.png"))
-    # plot_age_dependence(pos_data, os.path.join(data_path, "pic/age.png"))
+    # 画图函数，不用哪个注释即可
+    plot_pos_radar(pos_six_data)
+    plot_famous_radar(player, famous_six_data)
+    plot_bar(["Forward", "Midfielder", "Goalkeeper", "Defender"], [431, 311, 147, 2],
+             os.path.join(data_path, "pic/bar.png"))
+    plot_age_dependence(pos_data, os.path.join(data_path, "pic/age.png"))
     plot_beautiful_scatter_weight_and_height(pos_data, os.path.join(data_path, "pic/weight.png"))

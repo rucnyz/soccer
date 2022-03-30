@@ -14,10 +14,13 @@
 
 ## 运行方法
 
-得到所有结果
+- 得到所有统计建模的结果
+    - 运行方式见下，共计需要92分钟左右。
+    - 不对特征进行可视化，则将visual设置为0。
 
 ```shell
 python main.py --seed 42 --visual 1 --metric f1
 ```
 
-不对特征进行可视化，则将visual设置为0
+- 得到可视化结果
+    - 运行`visualization.py`，需要30分钟左右
