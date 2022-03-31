@@ -23,7 +23,7 @@ def plot_bar(x, y, path):
     for i, b in enumerate(y):
         plt.text(i, b + 7, b, ha = 'center', va = 'center')
     plt.title("bar")
-    plt.savefig(path)
+    plt.savefig(path, transparent = True)
 
 
 def plot_radar(data, kinds, path, title):
@@ -42,7 +42,7 @@ def plot_radar(data, kinds, path, title):
     plt.legend(loc = (-0.2, 0), fontsize = 10)
     plt.title(title)
     plt.tight_layout()
-    plt.savefig(path)
+    plt.savefig(path, transparent = True)
 
 
 def explore_data(inputs, path):
@@ -72,7 +72,7 @@ def explore_data(inputs, path):
     # DefaultSize = fig.get_size_inches()
     # fig.set_size_inches((DefaultSize[0] * 1.2, DefaultSize[1] * 1.2))
 
-    plt.savefig(path)
+    plt.savefig(path, transparent = True)
 
     labels = inputs.loc[:, 'label']
     class_weights = labels.value_counts() / len(labels)
@@ -112,7 +112,7 @@ def plot_confusion_matrix(y_test, X_test, clf, dim_reduce, path, cmap = plt.cm.B
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     plt.tight_layout()
-    plt.savefig(path)
+    plt.savefig(path, transparent = True)
 
     # Print classification report
     y_pred = clf.predict(dim_reduce.transform(X_test))
@@ -147,7 +147,7 @@ def plot_training_results(clfs, reductions, train_scores, test_scores, path, met
     title = "Test Data {} Scores".format(metric_fn)
     plt.title(title)
     plt.tight_layout()
-    plt.savefig(path)
+    plt.savefig(path, transparent = True)
     print(title + "绘制完成")
     print("----------------------------------")
 
@@ -198,7 +198,7 @@ def plot_bookkeeper_cf_matrix(matches, bookkeepers, path, normalize = True):
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
 
-    plt.savefig(path)
+    plt.savefig(path, transparent = True)
     # 输出报告
     print(classification_report(y_test, y_pred))
     print("菠菜的分数 test set: {:.4f}.".format(balanced_accuracy_score(y_test, y_pred)))
@@ -239,7 +239,7 @@ def plot_age_dependence(player_data, path):
     plt.plot(agenew, ff(agenew), "-", agenew, fd(agenew), "-", agenew, fg(agenew), "-", agenew, fm(agenew), "-")
     plt.legend(['Forward', "Defender", "Goalkeeper", "Midfielder"], loc = 'best')
     plt.title("Age and Rating")
-    plt.savefig(path)
+    plt.savefig(path, transparent = True)
 
 
 def plot_beautiful_scatter_weight_and_height(player_data, path):
@@ -269,4 +269,4 @@ def plot_beautiful_scatter_weight_and_height(player_data, path):
                loc = 'upper left', ncol = 1, fontsize = 10)
     plt.title("Height and Weight")
     plt.tight_layout()
-    plt.savefig(path)
+    plt.savefig(path, transparent = True)
