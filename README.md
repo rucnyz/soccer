@@ -26,5 +26,7 @@
 python main.py --seed 42 --visual 1 --metric f1
 ```
 
-- 得到可视化结果
-    - 运行`visualization.py`，需要30分钟左右
+- 得到描述分析的结果
+    - 绝大部分可视化图表，运行`visualization.py`，需要30分钟左右
+    - 球队排行榜结果，运行`leaderboard.py`即可。
+  

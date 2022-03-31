@@ -83,3 +83,4 @@ if __name__ == '__main__':
     board = nx.pagerank(G)
     board = sorted(board.items(), key = lambda s: s[1], reverse = True)
     result = list(map(get_team_name, board))
+    print(result)
