@@ -175,7 +175,8 @@ if __name__ == '__main__':
     clfs, reductions, train_scores, test_scores = find_best_classifier(clfs, reductions, scorer, X_train, y_train,
                                                                        X_calibrate, y_calibrate, X_test, y_test,
                                                                        cv_sets, parameters, n_jobs, args)
-    train_score, test_score = train_ensemble(clfs, reductions, X_train_calibrate, y_train_calibrate, X_test, y_test)
+    train_score, test_score, test_pred = train_ensemble(clfs, reductions, X_train_calibrate, y_train_calibrate, X_test,
+                                                        y_test)
     train_scores.append(train_score)
     test_scores.append(test_score)
     # 可视化训练集和测试集结果
