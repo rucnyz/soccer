@@ -8,6 +8,7 @@ from datetime import datetime
 from time import time
 
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 
 
 def get_overall_fifa_rankings(fifa, get_overall = False):
@@ -344,3 +345,14 @@ def create_feables(matches, fifa, bookkeepers, get_overall = False, horizontal =
     # 去掉NA
     feature_label.dropna(inplace = True)
     return feature_label
+
+
+def preprocess(data, norm = 1):
+    label = data.loc[:, 'label'].values
+    feat = data.drop('label', axis = 1).values
+    if norm == 0:
+        return label, feat
+    else:
+        scaler = MinMaxScaler([0, 1])
+        norm_feat = scaler.fit_transform(feat)
+        return label, norm_feat

@@ -52,7 +52,6 @@ def train_classifier(clf, reduction, X_train, y_train, cv_sets, params, scorer, 
     """ 训练 """
 
     start = time()
-    # TODO 训练过一次后就不要用网格搜索了
     estimators = [('reduce', reduction), ('clf', clf)]
     pipeline = Pipeline(estimators)
     # 进行网格搜索
