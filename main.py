@@ -24,6 +24,7 @@ def parse_my_args():
     parser.add_argument('--metric', type = str, default = "f1", choices = ["pre", "recall", "f1"])
     parser.add_argument('--average', type = str, default = "weighted", choices = ["macro", "micro", "weighted"])
     parser.add_argument('--n_jobs', type = int, default = 1)
+    parser.add_argument('--method', type = str, default = "dl", choices = ["ml", "dl"])
     arg = parser.parse_args()
     if arg.metric == "pre":
         arg.metric_fn = precision_score
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     # 得到原始数据
     player_data = pd.read_csv(os.path.join(data_path, "player.csv"), index_col = 0)
     player_stats_data = pd.read_csv(os.path.join(data_path, "player_attr.csv"), index_col = 0)
-    team_data = pd.read_csv(os.path.join(data_path, "team.csv"), index_col = 0)
+    team_data = pd.read_csv(os.path.join(data_path, "team_attr.csv"), index_col = 0)
     match_data = pd.read_csv(os.path.join(data_path, "match.csv"), index_col = 0)
 
     # 去掉na项
@@ -55,6 +56,6 @@ if __name__ == '__main__':
     match_data.dropna(subset = rows, inplace = True)
     # match_data = match_data.tail(1500)
     # 开始训练
-    train(data_path, match_data, player_stats_data, args)
+    train(data_path, match_data, player_stats_data, team_data, args)
     end = time()
     print("总计运行时间 {:.1f} 分钟".format((end - start) / 60))

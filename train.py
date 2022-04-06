@@ -3,10 +3,12 @@
 # @Author  : nieyuzhou
 # @File    : train.py
 # @Software: PyCharm
+
 import os
 
 import numpy as np
 import pandas as pd
+
 from sklearn import model_selection, linear_model
 from sklearn.decomposition import PCA, FastICA
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
@@ -20,7 +22,7 @@ from utils.get_data import get_fifa_data, create_feables, preprocess
 from utils.visualize import plot_confusion_matrix, plot_training_results, explore_data
 
 
-def extract_feat(data_path, match_data, player_stats_data):
+def extract_feat(data_path, match_data, player_stats_data, team_data):
     # -----------------------生成特征, 准备训练-----------------------
     feature_path = os.path.join(data_path, "middle_results/final_data.npy")
     # 赌场信息，比如betway(BW)，随便选两个有名的，不然na值太多了
@@ -33,20 +35,13 @@ def extract_feat(data_path, match_data, player_stats_data):
         inputs = pd.read_pickle(feature_path)
         print("读入所有数据")
     else:
-        feables = create_feables(match_data, fifa_data, bk_cols_selected, get_overall = True)
+        feables = create_feables(match_data, fifa_data, bk_cols_selected, team_data, get_overall = False)
         inputs = feables.drop('match_api_id', axis = 1)
         inputs.to_pickle(feature_path)
     return inputs
 
 
-def ml_training(labels, features, args, data_path):
-    # -----------------------开始训练-----------------------
-    X_train_calibrate, X_test, y_train_calibrate, y_test = train_test_split(features, labels, test_size = 0.2,
-                                                                            random_state = args.seed,
-                                                                            stratify = labels)
-    X_train, X_calibrate, y_train, y_calibrate = train_test_split(X_train_calibrate, y_train_calibrate, test_size = 0.3,
-                                                                  random_state = args.seed,
-                                                                  stratify = y_train_calibrate)
+def ml_training(X_train_valid, y_train_valid, X_train, X_valid, y_train, y_valid, X_test, y_test, args, data_path):
     # 用训练数据做五折交叉验证
     cv_sets = model_selection.StratifiedShuffleSplit(n_splits = 5, test_size = 0.20, random_state = 5)
     cv_sets.get_n_splits(X_train, y_train)
@@ -67,7 +62,7 @@ def ml_training(labels, features, args, data_path):
     # reductions = [pca]
     reductions = [pca, ica]
     # 使用的评价指标以及网格搜索的参数
-    feature_len = features.shape[1]
+    feature_len = X_train.shape[1]
     scorer = make_scorer(accuracy_score)
     # scorer = make_scorer(args.metric_fn, average = args.average)
     parameters_RF = {'clf__max_features': ['auto', 'log2'],
@@ -108,9 +103,9 @@ def ml_training(labels, features, args, data_path):
                                       args.metric_fn(y_test, test_pred, average = args.average)))
     # 训练所有的方法
     clfs, reductions, train_scores, test_scores = find_best_classifier(clfs, reductions, scorer, X_train, y_train,
-                                                                       X_calibrate, y_calibrate, X_test, y_test,
+                                                                       X_valid, y_valid, X_test, y_test,
                                                                        cv_sets, parameters, args.n_jobs, args)
-    train_score, test_score, test_pred = train_ensemble(clfs, reductions, X_train_calibrate, y_train_calibrate, X_test,
+    train_score, test_score, test_pred = train_ensemble(clfs, reductions, X_train_valid, y_train_valid, X_test,
                                                         y_test)
     train_scores.append(train_score)
     test_scores.append(test_score)
@@ -127,10 +122,21 @@ def ml_training(labels, features, args, data_path):
                           normalize = True)
 
 
-def train(data_path, match_data, player_stats_data, args):
-    inputs = extract_feat(data_path, match_data, player_stats_data)
+def train(data_path, match_data, player_stats_data, team_data, args):
+    inputs = extract_feat(data_path, match_data, player_stats_data, team_data)
+
     labels, features = preprocess(inputs, norm = 1)
     # -----------------------可视化-----------------------
     if args.visual == 1:
         explore_data(inputs, os.path.join(data_path, "pic/visual.png"))
-    ml_training(labels, features, args, data_path)
+    # -----------------------开始训练-----------------------
+    X_train_valid, X_test, y_train_valid, y_test = train_test_split(features, labels, test_size = 0.2,
+                                                                    random_state = args.seed,
+                                                                    stratify = labels)
+    X_train, X_valid, y_train, y_valid = train_test_split(X_train_valid, y_train_valid, test_size = 0.3,
+                                                          random_state = args.seed,
+                                                          stratify = y_train_valid)
+    if args.method == "ml":
+        ml_training(X_train_valid, y_train_valid, X_train, X_valid, y_train, y_valid, X_test, y_test, args, data_path)
+    else:
+        inputs.to_csv(os.path.join(data_path, "all2.csv"))
