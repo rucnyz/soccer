@@ -4,7 +4,6 @@
 # @File    : gluon_train.py
 # @Software: PyCharm
 import os
-from pprint import pprint
 
 import numpy as np
 import pandas as pd
@@ -16,7 +15,7 @@ from utils.get_data import preprocess
 if __name__ == '__main__':
     data_path = "./data/"
     label = 'label'
-    feature_path = os.path.join(data_path, "all2.csv")
+    feature_path = os.path.join(data_path, "processed/all2.csv")
     inputs = pd.read_csv(feature_path, index_col = 0)
     col = inputs.columns
     labels, features = preprocess(inputs, norm = 0)
@@ -44,4 +43,4 @@ if __name__ == '__main__':
     y_pred = predictor.predict(test_data_nolab)
     perf = predictor.evaluate_predictions(y_true = y_test, y_pred = y_pred, auxiliary_metrics = True)
     lb = predictor.leaderboard(test_data, silent = True)
-    pprint(lb)
+    print(lb)
