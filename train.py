@@ -36,7 +36,7 @@ def extract_feat(data_path, match_data, player_stats_data, team_data):
         print("读入所有数据")
     else:
         feables = create_feables(match_data, fifa_data, bk_cols_selected, team_data, get_overall = False)
-        inputs = feables.drop('match_api_id', axis = 1)
+        inputs = feables.set_index('match_api_id')
         inputs.to_pickle(feature_path)
     return inputs
 

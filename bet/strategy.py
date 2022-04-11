@@ -11,19 +11,28 @@ from test import test
 from train import extract_feat
 
 
+def get_model_odds(x):
+    if x['predict'] == "Win":
+        return x["B365H"]
+    elif x['predict'] == "Defeat":
+        return x["B365A"]
+    else:
+        return x["B365D"]
+
+
 def display_result(investment, predict, describe):
     print(describe + ":")
     print("  成本:", end = " ")
     print(investment, "元")
-    percent_correct1 = matches[~(predict == 0)].shape[0] / predict.shape[0]
+    correct_perc = (predict != 0).sum() / predict.shape[0]
     print("  正确预测比例:", end = " ")
-    print("{:.2f}%".format(percent_correct1 * 100), end = "    ")
-    returns = sum(predict)
+    print("{:.2f}%".format(correct_perc * 100), end = "    ")
+    profit = sum(predict)
     print("  盈利:", end = " ")
-    print("{:.2f} 元".format(returns - investment), end = "    ")
-    loss = (returns - investment) / investment
+    print("{:.2f} 元".format(profit - investment), end = "    ")
+    profit_perc = (profit - investment) / investment
     print("  盈利比例:", end = " ")
-    print("{:.2f}%".format(loss * 100))
+    print("{:.2f}%".format(profit_perc * 100))
     print("---------------------------")
 
 
@@ -73,7 +82,8 @@ if __name__ == '__main__':
 
     matches.loc[:, 'longshot_bet_payout'] = matches["longshot_odds"] * 10
     matches.loc[matches["longshot_outcome"] != matches["result"], 'longshot_bet_payout'] = 0
-
+    # 得到成本
+    invest = 10 * matches.shape[0]
     # 得到最终情况
     # 用我们的模型试试
     if os.path.exists(os.path.join(data_path, "processed/bet.csv")):
@@ -84,9 +94,17 @@ if __name__ == '__main__':
         team_data = pd.read_csv(os.path.join(data_path, "team_attr.csv"), index_col = 0)
         inputs = extract_feat(data_path, match_data, player_stats_data, team_data)
         inputs.to_csv(os.path.join(data_path, "processed/bet.csv"))
-    y_pred = test(inputs, data_path, 0)
-    display_result(10 * y_pred.shape[0], y_pred, "我们的模型策略")
+    inputs[['League_1.0', 'League_15722.0', 'League_19694.0', 'League_24558.0']] = 0
+    y_pred = test(inputs.drop("match_api_id", axis = 1), data_path, 0)
+    inputs["predict"] = y_pred
+    rest_data = pd.merge(matches, inputs, on = 'match_api_id')
+    # 得到赔率
+    rest_data.loc[:, 'my_odds'] = rest_data.apply(get_model_odds, axis = 1)
+    # 得到盈利情况
+    rest_data.loc[:, 'my_bet_payout'] = rest_data["my_odds"] * 10
+    rest_data.loc[rest_data["predict"] != rest_data["label"], 'my_bet_payout'] = 0
+    display_result(10 * rest_data.shape[0], rest_data["my_bet_payout"], "我们的模型策略")
     # 安全策略预测比例甚至超过了0.5，但是仍然赔钱
-    display_result(10 * matches.shape[0], matches["safest_bet_payout"], "最安全策略")
+    display_result(invest, matches["safest_bet_payout"], "最安全策略")
     # 最冒险的策略亏麻了
-    display_result(10 * matches.shape[0], matches["longshot_bet_payout"], "最冒险策略")
+    display_result(invest, matches["longshot_bet_payout"], "最冒险策略")
