@@ -4,6 +4,7 @@
 # @File    : strategy.py
 # @Software: PyCharm
 import os
+import random
 
 import pandas as pd
 
@@ -64,24 +65,32 @@ if __name__ == '__main__':
     matches.loc[matches.home_team_goal == matches.away_team_goal, "result"] = 'D'
     matches.loc[matches.home_team_goal < matches.away_team_goal, "result"] = 'A'
 
-    # 得到最安全和最危险的赔率
+    # 得到最安全和最危险的赔率和随机策略
     matches.loc[:, 'safest_odds'] = matches.apply(lambda x: min(x[11], x[12], x[13]), axis = 1)
     matches.loc[:, 'longshot_odds'] = matches.apply(lambda x: max(x[11], x[12], x[13]), axis = 1)
+    matches.loc[:, 'random_odds'] = matches.apply(lambda x: random.choice([x[11], x[12], x[13]]), axis = 1)
 
     # 最安全和最冒险的预测
     matches.loc[:, 'safest_outcome'] = 'H'
-    matches.loc[matches.B365D == matches.safest_odds, "safest_outcome"] = 'D'
-    matches.loc[matches.B365A == matches.safest_odds, "safest_outcome"] = 'A'
+    matches.loc[matches["B365D"] == matches["safest_odds"], "safest_outcome"] = 'D'
+    matches.loc[matches["B365A"] == matches["safest_odds"], "safest_outcome"] = 'A'
 
     matches.loc[:, 'longshot_outcome'] = 'A'
     matches.loc[matches["B365D"] == matches["longshot_odds"], "longshot_outcome"] = 'D'
     matches.loc[matches["B365H"] == matches["longshot_odds"], "longshot_outcome"] = 'H'
+
+    matches.loc[:, 'random_outcome'] = 'A'
+    matches.loc[matches["B365D"] == matches["random_odds"], "random_outcome"] = 'D'
+    matches.loc[matches["B365H"] == matches["random_odds"], "random_outcome"] = 'H'
     # 得到盈利情况，假设每次投注10元钱
     matches.loc[:, 'safest_bet_payout'] = matches["safest_odds"] * 10
     matches.loc[matches["safest_outcome"] != matches["result"], 'safest_bet_payout'] = 0
 
     matches.loc[:, 'longshot_bet_payout'] = matches["longshot_odds"] * 10
     matches.loc[matches["longshot_outcome"] != matches["result"], 'longshot_bet_payout'] = 0
+
+    matches.loc[:, 'random_bet_payout'] = matches["random_odds"] * 10
+    matches.loc[matches["random_outcome"] != matches["result"], 'random_bet_payout'] = 0
     # 得到成本
     invest = 10 * matches.shape[0]
     # 得到最终情况
@@ -108,3 +117,5 @@ if __name__ == '__main__':
     display_result(invest, matches["safest_bet_payout"], "最安全策略")
     # 最冒险的策略亏麻了
     display_result(invest, matches["longshot_bet_payout"], "最冒险策略")
+    # 随机的效果怎么样呢
+    display_result(invest, matches["random_bet_payout"], "随机策略")
