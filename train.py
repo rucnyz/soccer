@@ -139,4 +139,4 @@ def train(data_path, match_data, player_stats_data, team_data, args):
     if args.method == "ml":
         ml_training(X_train_valid, y_train_valid, X_train, X_valid, y_train, y_valid, X_test, y_test, args, data_path)
     else:
-        inputs.to_csv(os.path.join(data_path, "processed/all2.csv"))
+        inputs.to_csv(os.path.join(data_path, "processed/all.csv"))

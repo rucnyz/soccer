@@ -15,7 +15,7 @@ from utils.get_data import preprocess
 if __name__ == '__main__':
     data_path = "./data/"
     label = 'label'
-    feature_path = os.path.join(data_path, "processed/all2.csv")
+    feature_path = os.path.join(data_path, "processed/all.csv")
     inputs = pd.read_csv(feature_path, index_col = 0)
     col = inputs.columns
     labels, features = preprocess(inputs, norm = 0)
