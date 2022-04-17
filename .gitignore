@@ -8,3 +8,4 @@
 .idea
 /data/player_pos.csv
 /data/model
+/data/database.sqlite
