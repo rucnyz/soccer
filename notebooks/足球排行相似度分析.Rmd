@@ -1,0 +1,61 @@
+---
+title: "足球排行相似度分析"
+author: "韩子航 2019202424"
+date: "2022/4/21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+各排行榜之间差异分析
+
+```{r}
+socc=readxl::read_xlsx("C:/Users/hp/Desktop/排行榜.xlsx")
+```
+
+```{r}
+plot_top_teams =
+ggplot(socc,aes(y=reorder(rank1,ii),x=ii,fill=rank1))+
+  geom_bar(stat = 'identity')+theme(axis.text.x=element_text(angle=90))+coord_cartesian(xlim = c(80, 100))+
+  ylab("Team name")+xlab("Score")
+plot_top_teams
+
+plot_top_teams =
+ggplot(socc,aes(y=reorder(rank2,ll),x=ll,fill=rank2))+
+  geom_bar(stat = 'identity')+theme(axis.text.x=element_text(angle=90))+coord_cartesian(xlim = c(80, 100))+
+  ylab("Team name")+xlab("Score")
+plot_top_teams
+```
+
+
+```{r}
+plot_top_teams =
+ggplot(socc,aes(y=reorder(mid,...6),x=...6,fill=mid))+
+  geom_bar(stat = 'identity')+theme(axis.text.x=element_text(angle=90))+coord_cartesian(xlim = c(0.5, 0.8))+
+  ylab("Team name")+xlab("Win Rate")
+plot_top_teams
+```
+
+
+```{r}
+socc$...6=top_win_teams$win_pct
+
+rank_real=socc[,c(1,2)]
+rank_win=socc[,c(5,6)]
+rank_rank1=socc[,c(8,9)]
+rank_rank2=socc[,c(11,12)]
+
+colnames(rank_rank1)=c("real","r1")
+colnames(rank_rank2)=c("real","r2")
+colnames(rank_win)=c("real","wr")
+rank1=merge(rank_real,rank_rank1,by="real")
+rank2=merge(rank_real,rank_rank2,by="real")
+rankw=merge(rank_real,rank_win,by="real")
+
+cor.test(rank1$bb,rank1$r1,method = "spearman")
+cor.test(rank2$bb,rank2$r2,method = "spearman")
+cor.test(rankw$bb,rankw$wr,method = "spearman")
+
+```
